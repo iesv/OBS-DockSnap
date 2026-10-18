@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="470" viewBox="0 0 660 470">
+  <style>
+    text { font-family: 'Microsoft YaHei UI', 'PingFang SC', sans-serif; font-size: 13px; fill: #e5e5e5; }
+    .button { fill: #383838; stroke: #515151; rx: 4; }
+  </style>
+  <rect width="660" height="470" rx="8" fill="#202020"/>
+  <path d="M8 0h644a8 8 0 0 1 8 8v23H0V8a8 8 0 0 1 8-8" fill="#827449"/>
+  <text x="15" y="21">布局快照</text><path d="m635 10 10 10m0-10-10 10" stroke="#fff"/>
+  <text x="15" y="56">保存和恢复 OBS 面板布局。拖动快照排序，双击加载。</text>
+  <rect x="15" y="72" width="475" height="326" rx="4" fill="#2d2d2d"/>
+  <rect x="19" y="77" width="454" height="32" rx="3" fill="#71643f"/>
+  <text x="31" y="98">主直播</text><text x="31" y="134">双屏直播</text>
+  <text x="31" y="170">演示与教学</text><text x="31" y="206">录屏</text>
+  <text x="31" y="242">剪辑</text><text x="31" y="278">竖屏直播</text>
+  <rect x="479" y="80" width="6" height="310" rx="3" fill="#242424"/>
+  <rect x="479" y="82" width="6" height="94" rx="3" fill="#696969"/>
+  <g text-anchor="middle">
+    <rect class="button" x="500" y="72" width="145" height="32"/><text x="572" y="93">另存为新快照…</text>
+    <rect class="button" x="500" y="114" width="145" height="32"/><text x="572" y="135">覆盖保存</text>
+    <rect class="button" x="500" y="156" width="145" height="32"/><text x="572" y="177">加载</text>
+    <rect class="button" x="500" y="198" width="145" height="32"/><text x="572" y="219">重命名…</text>
+    <rect class="button" x="500" y="240" width="145" height="32"/><text x="572" y="261">删除…</text>
+    <rect class="button" x="500" y="282" width="145" height="32"/><text x="572" y="303">导入…</text>
+    <rect class="button" x="500" y="324" width="145" height="32"/><text x="572" y="345">导出…</text>
+    <rect class="button" x="500" y="366" width="145" height="32"/><text x="572" y="387">刷新</text>
+  </g>
+  <text x="15" y="445">OBS-DockSnap 1.0.0 · 作者：<tspan fill="#91b7df" text-decoration="underline">haliluya.net</tspan></text>
+</svg>

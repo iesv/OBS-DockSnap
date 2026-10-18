@@ -1,0 +1,98 @@
+name: Build and release
+run-name: INIT
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['dist/**', '*.md']
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            platform: windows-x64
+          - os: macos-15
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Preserve shell script line endings
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Build, test and package
+        run: python scripts/build.py
+      - name: Test Windows installer twice
+        if: runner.os == 'Windows'
+        shell: python
+        run: |
+          import os, subprocess, zipfile
+          from pathlib import Path
+          stage = Path(os.environ['RUNNER_TEMP']) / 'docksnap installer test'
+          with zipfile.ZipFile('dist/OBS-DockSnap-1.0.0-windows-x64.zip') as package:
+              package.extractall(stage)
+          env = os.environ.copy()
+          env['ProgramData'] = str(Path(os.environ['RUNNER_TEMP']) / 'docksnap program data')
+          for repeat in range(2):
+              subprocess.run(['cmd.exe', '/d', '/c', str(stage / 'install_OBS-DockSnap.bat')],
+                             input='', text=True, env=env, check=True, timeout=30)
+          installed = Path(env['ProgramData']) / 'obs-studio/plugins/obs-docksnap/bin/64bit/obs-docksnap.dll'
+          assert installed.read_bytes() == (stage / 'obs-docksnap/bin/64bit/obs-docksnap.dll').read_bytes()
+      - name: Test macOS installer and quarantine removal twice
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          stage="$RUNNER_TEMP/docksnap installer test"
+          mkdir -p "$stage"
+          unzip -q dist/OBS-DockSnap-1.0.0-macos-arm64.zip -d "$stage"
+          /usr/bin/xattr -wr com.apple.quarantine '0081;00000000;OBS-DockSnap;' "$stage/obs-docksnap.plugin"
+          bash "$stage/install_OBS-DockSnap.sh" </dev/null
+          bash "$stage/install_OBS-DockSnap.sh" </dev/null
+          installed="$HOME/Library/Application Support/obs-studio/plugins/obs-docksnap.plugin"
+          /usr/bin/codesign --verify --deep --strict "$installed"
+          if /usr/bin/xattr -lr "$installed" | grep -q 'com.apple.quarantine:'; then exit 1; fi
+          file "$installed/Contents/MacOS/obs-docksnap" | grep arm64
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: OBS-DockSnap-${{ matrix.platform }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: Testlog-${{ matrix.platform }}
+          path: |
+            build/Testing/Temporary/LastTest.log
+            build/manager-*.png
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: OBS-DockSnap-*
+          path: artifacts
+          merge-multiple: true
+      - name: Publish validated ZIPs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if ! gh release view v1.0.0 >/dev/null 2>&1; then
+            gh release create v1.0.0 --target "$GITHUB_SHA" --title 'OBS-DockSnap 1.0.0' --notes 'INIT'
+          fi
+          gh release edit v1.0.0 --title 'OBS-DockSnap 1.0.0' --notes 'INIT'
+          gh release upload v1.0.0 artifacts/*.zip --clobber
